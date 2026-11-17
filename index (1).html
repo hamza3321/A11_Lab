@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en"><!-- SC 3.1.1: page language lets screen readers pick the right voice -->
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><!-- no user-scalable=no: it would block zoom (SC 1.4.4) -->
+<title>A11y Lab – Learn, test and fix WCAG 2.1 AA</title><!-- SC 2.4.2 -->
+<style>
+:root,[data-theme=light]{--bg:#fbfaf7;--fg:#1b1f24;--mut:#4a525c;--ac:#0b4f8a;--bd:#6b7280;--cd:#fff;--ok:#0a5c2e;--no:#a11a1a;color-scheme:light}
+[data-theme=dark]{--bg:#12161c;--fg:#e8eaed;--mut:#b4bcc7;--ac:#8ec5ff;--bd:#8b96a3;--cd:#1a2029;--ok:#7ee0a3;--no:#ff9b9b;color-scheme:dark}
+[data-theme=hc]{--bg:#000;--fg:#fff;--mut:#fff;--ac:#ff0;--bd:#fff;--cd:#000;--ok:#0f0;--no:#ff8080;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:1rem/1.55 system-ui,sans-serif}
+h1,h2,h3{font-family:Georgia,serif;line-height:1.2}
+a{color:var(--ac)}
+/* SC 2.4.7: strong focus ring; never outline:none without a replacement. Two-tone ring stays visible on any background. */
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px;box-shadow:0 0 0 5px var(--bg)}
+button,select,input,textarea{font:inherit;color:var(--fg);background:var(--cd);border:2px solid var(--bd);border-radius:.4rem}
+button,select{min-height:2.75rem;min-width:2.75rem;padding:.25rem .8rem;cursor:pointer}/* 44px targets */
+input[type=text],input[type=email],textarea{min-height:2.75rem;padding:.25rem .6rem;width:100%;max-width:28rem}
+input[type=color]{min-width:2.75rem;padding:0}
+.skip{position:absolute;left:.5rem;top:-4rem;background:var(--cd);padding:.6rem 1rem;z-index:99}
+.skip:focus{top:.5rem}/* hidden until focused (SC 2.4.1) */
+header,footer{padding:1rem;border-bottom:2px solid var(--bd);display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between}
+main{max-width:70rem;margin:auto;padding:1rem}
+[role=tablist]{display:flex;flex-wrap:wrap;gap:.4rem;margin:0 0 1rem}
+[role=tab]{border-radius:.4rem .4rem 0 0}
+[role=tab][aria-selected=true]{background:var(--ac);color:var(--bg);border-color:var(--ac);font-weight:700}/* selected state also bold: not color alone */
+.card{background:var(--cd);border:2px solid var(--bd);border-radius:.6rem;padding:1rem;margin:0 0 1rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr));gap:1rem}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%}th,td{border:1px solid var(--bd);padding:.4rem .6rem;text-align:left}
+.pass{color:var(--ok);font-weight:700}.fail{color:var(--no);font-weight:700}/* always paired with ✓/✗ + words */
+pre{overflow-x:auto;background:var(--bg);border:1px solid var(--bd);padding:.5rem;font-size:.85rem;white-space:pre-wrap}
+.err{color:var(--no);font-weight:700}
+[role=menu]{list-style:none;margin:.2rem 0 0;padding:.3rem;border:2px solid var(--bd);background:var(--cd);position:absolute;z-index:5}
+[role=menu] button{display:block;width:100%;text-align:left;border:0}
+.menuwrap{position:relative;display:inline-block}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:grid;place-items:center;z-index:50}
+#modal[hidden]{display:none}#modal .card{max-width:30rem;margin:1rem}
+.toast{min-height:2.5rem;border:2px dashed var(--bd);padding:.5rem;margin-top:.5rem}
+#klog{font:.85rem monospace;margin:0;padding-left:1.2rem}
+.insp [data-i]::after{content:" ⟨" attr(data-i) "⟩";font:.7rem monospace;background:var(--fg);color:var(--bg);padding:0 .3rem}
+.insp [data-i]{outline:2px dashed var(--ac)}
+/* Module 2/3 sample UI: own fixed light colours so the audit is theme-independent */
+.stage{overflow:auto;border:2px solid var(--bd);background:#ddd;max-width:100%}
+.s{background:#fff;color:#1a1a1a;padding:1rem;font-family:system-ui,sans-serif}
+.s nav{display:flex;gap:1rem;align-items:center;flex-wrap:wrap}.s a{color:#0b4f8a}
+.s .btn,.s .ib{display:inline-block;background:#0b4f8a;color:#fff;border:0;padding:.5rem 1rem;border-radius:.3rem;cursor:pointer}
+.s .st,.s .car{margin:.5rem 0}.s input{border:2px solid #767676;background:#fff;color:#1a1a1a}.s .er{color:#a11a1a}
+.s.ok :focus-visible{outline:3px solid #0b4f8a;outline-offset:2px}
+.s.ok .mut{color:#595959}.s.ok .hero{padding:1rem;background:#e8eef5}
+.s.ok .sl{position:absolute;left:-99rem}.s.ok .sl:focus{position:static}
+.s.bad{width:640px}.s.bad *:focus{outline:none}.s.bad .mut{color:#aaa}
+.s.bad .hero{width:600px;height:90px;overflow:hidden;font-size:12px;background:#e8eef5;color:#9ab;padding:8px}
+.s.bad .btn,.s.bad .ib{background:#8fb8e8}.s.bad input{border:1px solid #ddd}.s.bad input.err{border-color:red}
+.s.bad .card2{width:560px}.s.ok .card2{max-width:100%}
+.s.bad .st{height:1.5rem}
+.sp *{line-height:1.5!important;letter-spacing:.12em!important;word-spacing:.16em!important}.sp p{margin-bottom:2em!important}
+.sr{position:absolute;left:-99rem}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+@media print{header,nav,footer,.noprint,[role=tabpanel]:not(#p4){display:none!important}#p4{display:block!important}.card{border-color:#000}}
+</style></head>
+<body>
+<div id="wrap">
+<a class="skip" href="#main">Skip to main content</a>
+<header><h1>A11y Lab</h1>
+<div><label for="theme">Theme </label><select id="theme"><option value="light">Light</option><option value="dark">Dark</option><option value="hc">High contrast</option></select></div></header>
+<nav aria-label="Modules"><div role="tablist" id="mainTabs" aria-label="A11y Lab modules" style="padding:0 1rem;margin-top:1rem">
+<button role="tab" id="t1" aria-controls="p1" aria-selected="true">1 · Keyboard &amp; screen reader</button>
+<button role="tab" id="t2" aria-controls="p2" aria-selected="false" tabindex="-1">2 · Contrast &amp; magnification</button>
+<button role="tab" id="t3" aria-controls="p3" aria-selected="false" tabindex="-1">3 · Remediation workshop</button>
+<button role="tab" id="t4" aria-controls="p4" aria-selected="false" tabindex="-1">4 · Audit report</button></div></nav>
+<main id="main" tabindex="-1">
+
+<section role="tabpanel" id="p1" aria-labelledby="t1">
+<h2>Keyboard &amp; screen reader lab</h2>
+<p><label><input type="checkbox" id="inspT"> ARIA Inspector (show roles/states on each component)</label></p>
+<div id="m1" class="grid">
+<div class="card"><h3>Tabs</h3><div role="tablist" id="demoTabs" aria-label="Demo tabs"><button role="tab" id="dt1" aria-controls="dp1" aria-selected="true">One</button><button role="tab" id="dt2" aria-controls="dp2" aria-selected="false" tabindex="-1">Two</button><button role="tab" id="dt3" aria-controls="dp3" aria-selected="false" tabindex="-1">Three</button></div>
+<div role="tabpanel" id="dp1" aria-labelledby="dt1" tabindex="0">Panel one.</div><div role="tabpanel" id="dp2" aria-labelledby="dt2" tabindex="0" hidden>Panel two.</div><div role="tabpanel" id="dp3" aria-labelledby="dt3" tabindex="0" hidden>Panel three.</div>
+<p><b>Test:</b> Tab to the tab list (one stop), then Arrow keys, Home, End. <b>ARIA:</b> tablist/tab/tabpanel, aria-selected, aria-controls, aria-labelledby, roving tabindex.</p></div>
+
+<div class="card"><h3>Accordion</h3>
+<h4 style="margin:0"><button aria-expanded="false" aria-controls="ac1" class="acc">What is SC 2.1.1?</button></h4><div id="ac1" hidden>All functionality works from a keyboard.</div>
+<h4 style="margin:.5rem 0 0"><button aria-expanded="false" aria-controls="ac2" class="acc">What is SC 4.1.2?</button></h4><div id="ac2" hidden>Name, role and value are exposed programmatically.</div>
+<p><b>Test:</b> Enter / Space toggles. <b>ARIA:</b> aria-expanded, aria-controls. A native button supplies the keys for free.</p></div>
+
+<div class="card"><h3>Modal dialog</h3><button id="openM">Open dialog</button>
+<p><b>Test:</b> focus moves in, Tab/Shift+Tab stay inside, Esc closes, focus returns here. <b>ARIA:</b> role=dialog, aria-modal, aria-labelledby/describedby.</p></div>
+
+<div class="card"><h3>Menu button</h3><div class="menuwrap"><button id="mb" aria-haspopup="menu" aria-expanded="false" aria-controls="mn">Actions</button>
+<ul role="menu" id="mn" aria-labelledby="mb" hidden><li role="none"><button role="menuitem" tabindex="-1">Copy</button></li><li role="none"><button role="menuitem" tabindex="-1">Rename</button></li><li role="none"><button role="menuitem" tabindex="-1">Delete</button></li></ul></div>
+<p><b>Test:</b> Enter/Down opens, Up/Down/Home/End move, Esc closes and returns focus. <b>ARIA:</b> aria-haspopup, aria-expanded, menu, menuitem.</p></div>
+
+<div class="card"><h3>Form with validation</h3>
+<div id="esum" tabindex="-1" hidden></div>
+<form id="f1" novalidate>
+<p><label for="fn">Name (required)</label><br><input type="text" id="fn" aria-required="true" aria-describedby="fnE" autocomplete="name"><br><span id="fnE" class="err"></span></p>
+<p><label for="fe">Email (required)</label><br><input type="email" id="fe" aria-required="true" aria-describedby="feE" autocomplete="email"><br><span id="feE" class="err"></span></p>
+<button type="submit">Send</button></form>
+<p><b>Test:</b> submit empty: focus jumps to the error summary; errors are text with “Error:”, not colour alone (SC 3.3.1). <b>ARIA:</b> aria-required, aria-invalid, aria-describedby.</p></div>
+
+<div class="card"><h3>Status message</h3><button id="toastB">Save draft</button><div id="toast" class="toast" role="status"></div>
+<p><b>Test:</b> a screen reader announces “Draft saved” without focus moving (SC 4.1.3). <b>ARIA:</b> role=status (implicit aria-live=polite).</p></div>
+
+<div class="card"><h3>Sortable table</h3><div class="wrap"><table id="tb"><caption>Contrast ratios (larger is better)</caption><thead><tr><th scope="col" aria-sort="none"><button data-k="0">Pair</button></th><th scope="col" aria-sort="none"><button data-k="1">Ratio</button></th></tr></thead>
+<tbody><tr><td>Black on white</td><td>21</td></tr><tr><td>#767676 on white</td><td>4.54</td></tr><tr><td>#aaa on white</td><td>2.32</td></tr></tbody></table></div>
+<p><b>ARIA:</b> caption, th scope, aria-sort on the active column header.</p></div>
+
+<div class="card"><h3>Keyboard event log</h3><p>Press keys anywhere; watch focus order (SC 2.4.3).</p><ol id="klog" aria-live="off"></ol></div>
+</div>
+</section>
+
+<section role="tabpanel" id="p2" aria-labelledby="t2" hidden>
+<h2>Contrast &amp; magnification tester</h2>
+<div class="grid"><div class="card"><h3>Contrast checker</h3>
+<p><label for="fgc">Text colour</label> <input type="color" id="fgc" value="#767676"> <label for="fgh" class="sr">Text colour hex</label><input type="text" id="fgh" value="#767676" style="width:8rem"></p>
+<p><label for="bgc">Background colour</label> <input type="color" id="bgc" value="#ffffff"> <label for="bgh" class="sr">Background colour hex</label><input type="text" id="bgh" value="#ffffff" style="width:8rem"></p>
+<p><b>Ratio: <output id="ratio">–</output></b> <span id="hexerr" class="err"></span></p>
+<div class="wrap"><table><caption>WCAG 2.x results</caption><thead><tr><th scope="col">Check</th><th scope="col">Needs</th><th scope="col">Result</th></tr></thead><tbody id="cres"></tbody></table></div>
+<p><label for="tgt">Target</label> <select id="tgt"><option value="3">3:1</option><option value="4.5" selected>4.5:1</option><option value="7">7:1</option></select> <button id="sug">Suggest nearest passing text colour</button></p>
+<p id="sugout" role="status"></p>
+<div id="prev" style="padding:1rem"><p style="margin:0;font-size:1rem">Normal text sample (16px)</p><p style="margin:0;font-size:24px">Large text sample (24px)</p><p style="margin:0;font-size:18.66px;font-weight:700">Bold large (18.66px bold)</p></div>
+<p>Large text = at least 24px regular, or 18.66px (14pt) bold.</p></div>
+
+<div class="card"><h3>Page scanner</h3><p>Scans the Before and After sample UIs from Module 3.</p><button id="scan">Scan sample UIs</button><p id="scanS" role="status"></p>
+<div class="wrap"><table><caption>Failing text elements</caption><thead><tr><th scope="col">Sample</th><th scope="col">Element</th><th scope="col">Colours</th><th scope="col">Ratio</th><th scope="col">Needs</th><th scope="col">Fix</th></tr></thead><tbody id="scanT"></tbody></table></div></div></div>
+
+<div class="card"><h3>Magnification &amp; colour-vision tests</h3>
+<p><label for="sv">Sample</label> <select id="sv"><option value="0">Before</option><option value="1">After</option></select>
+<label for="cvd">Vision filter</label> <select id="cvd"><option value="none">None</option><option value="protanopia">Protanopia</option><option value="deuteranopia">Deuteranopia</option><option value="tritanopia">Tritanopia</option><option value="achromatopsia">Achromatopsia</option></select>
+<label for="zm">Zoom <output id="zmo">100%</output></label> <input type="range" id="zm" min="100" max="400" step="25" value="100" style="width:10rem;min-height:2.75rem"></p>
+<p><label><input type="checkbox" id="rf"> Reflow at 320 CSS px (SC 1.4.10)</label> <label><input type="checkbox" id="tsp"> Text spacing (SC 1.4.12)</label></p>
+<p id="mres" role="status"><b>Result:</b> none run yet.</p>
+<div class="stage" id="stage"><div id="stIn"></div></div>
+<p>SC 1.4.4: text must resize to 200% without loss of content or function. Filters and zoom here are <b>simulations</b> (approximate matrices, CSS zoom). Also test with the OS magnifier, browser zoom (Ctrl +) and NVDA, JAWS or VoiceOver.</p></div>
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><defs>
+<filter id="protanopia"><feColorMatrix type="matrix" values=".567 .433 0 0 0 .558 .442 0 0 0 0 .242 .758 0 0 0 0 0 1 0"/></filter>
+<filter id="deuteranopia"><feColorMatrix type="matrix" values=".625 .375 0 0 0 .7 .3 0 0 0 0 .3 .7 0 0 0 0 0 1 0"/></filter>
+<filter id="tritanopia"><feColorMatrix type="matrix" values=".95 .05 0 0 0 0 .433 .567 0 0 0 .475 .525 0 0 0 0 0 1 0"/></filter>
+<filter id="achromatopsia"><feColorMatrix type="matrix" values=".299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 0 0 0 1 0"/></filter></defs></svg>
+</section>
+
+<section role="tabpanel" id="p3" aria-labelledby="t3" hidden>
+<h2>WCAG 2.1 remediation workshop</h2>
+<p>The Before UI has 18 deliberate failures (including a keyboard trap: <b>press Esc</b> inside the trapped field to leave). Find them, then compare with After.</p>
+<fieldset><legend>View</legend><label><input type="radio" name="vw" value="b" checked> Before</label> <label><input type="radio" name="vw" value="a"> After</label> <label><input type="radio" name="vw" value="s"> Side by side</label></fieldset>
+<p id="prog" role="status"></p>
+<div class="grid" style="margin-top:1rem"><div id="bwrap" class="wrap"><h3>Before (broken on purpose)</h3><div id="before"></div></div><div id="awrap" class="wrap" hidden><h3>After (fixed)</h3><div id="after"></div></div></div>
+<h3>Issue tracker</h3><ol id="iss"></ol>
+</section>
+
+<section role="tabpanel" id="p4" aria-labelledby="t4" hidden>
+<h2>Audit report &amp; checklist</h2>
+<div class="card noprint"><h3>Test-method guide</h3><ul>
+<li><b>Keyboard only:</b> unplug the mouse. Tab, Shift+Tab, Enter, Space, Arrows, Esc. Look for traps, lost focus and invisible focus.</li>
+<li><b>Screen readers:</b> NVDA + Firefox or Chrome (Windows), VoiceOver + Safari (macOS/iOS), TalkBack (Android). Check names, roles, states and announcements.</li>
+<li><b>Zoom:</b> browser zoom to 200% and 400% (320px wide); OS magnifier; text-spacing bookmarklet.</li>
+<li><b>Contrast:</b> a contrast checker or the Module 2 tool; test hover, focus and disabled states too.</li>
+<li><b>Automated:</b> axe DevTools, Lighthouse, WAVE. These catch only a portion of WCAG issues (commonly estimated at roughly a third); manual testing is required.</li></ul></div>
+<form id="chk" class="noprint"></form>
+<p class="noprint"><button id="gen">Generate report</button> <button id="cp">Copy report as text</button> <button id="pr">Print</button></p>
+<div id="report" tabindex="-1" role="region" aria-label="Audit report"></div>
+</section>
+</main>
+<footer><p>A11y Lab is a learning aid. It cannot replace testing with real assistive technology and real users.</p></footer>
+</div>
+
+<div id="modal" hidden><div class="card" role="dialog" aria-modal="true" aria-labelledby="mt" aria-describedby="md"><h2 id="mt">Delete draft?</h2><p id="md">Focus is trapped here until you close the dialog.</p><button id="mc">Cancel</button> <button id="mo">Delete</button></div></div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+// ---------- Theme: native <select>; default follows prefers-color-scheme
+$('#theme').value=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+const setTheme=()=>document.documentElement.dataset.theme=$('#theme').value;setTheme();$('#theme').onchange=setTheme;
+// ---------- Tabs (APG): roving tabindex, Arrow/Home/End; manual hidden toggling of panels
+function tabs(list){const t=[...list.querySelectorAll('[role=tab]')];
+const sel=i=>t.forEach((x,j)=>{x.setAttribute('aria-selected',i==j);x.tabIndex=i==j?0:-1;document.getElementById(x.getAttribute('aria-controls')).hidden=i!=j});
+t.forEach((x,i)=>{x.onclick=()=>sel(i);x.onkeydown=e=>{const n={ArrowRight:(i+1)%t.length,ArrowLeft:(i-1+t.length)%t.length,Home:0,End:t.length-1}[e.key];if(n!=null){e.preventDefault();sel(n);t[n].focus()}}})}
+tabs($('#mainTabs'));tabs($('#demoTabs'));
+// ---------- Accordion: native button gives Enter/Space; we only manage aria-expanded
+$$('.acc').forEach(b=>b.onclick=()=>{const o=b.getAttribute('aria-expanded')=='true';b.setAttribute('aria-expanded',!o);document.getElementById(b.getAttribute('aria-controls')).hidden=o});
+// ---------- Modal: inert background + Tab trap + Esc + focus return
+let trig;const modal=$('#modal');
+function openM(){trig=document.activeElement;modal.hidden=false;$('#wrap').inert=true;$('#mc').focus()}
+function closeM(){modal.hidden=true;$('#wrap').inert=false;trig&&trig.focus()}
+$('#openM').onclick=openM;$('#mc').onclick=closeM;$('#mo').onclick=()=>{closeM();say('Draft deleted')};
+modal.onkeydown=e=>{if(e.key=='Escape')closeM();if(e.key=='Tab'){const f=$$('#modal button');const a=f[0],z=f[f.length-1];
+if(e.shiftKey&&document.activeElement==a){e.preventDefault();z.focus()}else if(!e.shiftKey&&document.activeElement==z){e.preventDefault();a.focus()}}};
+// ---------- Menu button
+const mb=$('#mb'),mn=$('#mn'),mi=()=>$$('#mn [role=menuitem]');
+function menu(o,i=0){mn.hidden=!o;mb.setAttribute('aria-expanded',o);if(o)mi()[i].focus();else mb.focus()}
+mb.onclick=()=>menu(mn.hidden);
+mb.onkeydown=e=>{if(e.key=='ArrowDown'){e.preventDefault();menu(true,0)}if(e.key=='ArrowUp'){e.preventDefault();menu(true,mi().length-1)}};
+mn.onkeydown=e=>{const m=mi(),i=m.indexOf(document.activeElement),n={ArrowDown:(i+1)%m.length,ArrowUp:(i-1+m.length)%m.length,Home:0,End:m.length-1}[e.key];
+if(n!=null){e.preventDefault();m[n].focus()}else if(e.key=='Escape'){menu(false)}else if(e.key=='Tab'){mn.hidden=true;mb.setAttribute('aria-expanded',false)}};
+mi().forEach(b=>b.onclick=()=>{menu(false);say(b.textContent+' chosen')});
+// ---------- Status toast (role=status already in markup; the region exists before text changes)
+function say(t){$('#toast').textContent=t}$('#toastB').onclick=()=>say('Draft saved');
+// ---------- Form validation: label, aria-invalid, aria-describedby, summary receives focus
+$('#f1').onsubmit=e=>{e.preventDefault();const L=[];
+[['fn','Name'],['fe','Email']].forEach(([id,n])=>{const i=$('#'+id),v=i.value.trim(),bad=!v||(id=='fe'&&!/^\S+@\S+\.\S+$/.test(v));
+i.setAttribute('aria-invalid',bad);$('#'+id+'E').textContent=bad?'Error: enter a valid '+n.toLowerCase()+'.':'';if(bad)L.push([id,n])});
+const s=$('#esum');if(L.length){s.hidden=false;s.className='card err';s.innerHTML='<h4 style="margin:0">'+L.length+' error(s) to fix</h4><ul>'+L.map(([i,n])=>`<li><a href="#${i}">${n}</a></li>`).join('')+'</ul>';s.focus();
+s.querySelectorAll('a').forEach(a=>a.onclick=ev=>{ev.preventDefault();$(a.getAttribute('href')).focus()})}else{s.hidden=true;say('Form sent. Thank you.')}};
+// ---------- Sortable table
+$$('#tb th button').forEach(b=>b.onclick=()=>{const th=b.parentElement,k=+b.dataset.k,asc=th.getAttribute('aria-sort')!='ascending';
+$$('#tb th').forEach(h=>h.setAttribute('aria-sort','none'));th.setAttribute('aria-sort',asc?'ascending':'descending');
+const rows=$$('#tb tbody tr').sort((a,c)=>{const x=a.cells[k].textContent,y=c.cells[k].textContent;return(k?x-y:x.localeCompare(y))*(asc?1:-1)});rows.forEach(r=>$('#tb tbody').append(r));say('Sorted '+(asc?'ascending':'descending'))});
+// ---------- Keyboard log + accessible-name approximation
+function name(e){if(!e||e==document.body)return'';return e.getAttribute('aria-label')||(e.getAttribute('aria-labelledby')&&document.getElementById(e.getAttribute('aria-labelledby').split(' ')[0])?.textContent)||(e.labels&&e.labels[0]?.textContent)||e.textContent.trim().slice(0,30)||e.placeholder||'(none)'}
+addEventListener('keydown',e=>{const t=e.target,li=document.createElement('li');li.textContent=`${e.key} → <${t.tagName.toLowerCase()}> role=${t.getAttribute('role')||'(implicit)'} name="${name(t)}"`;const l=$('#klog');l.prepend(li);while(l.children.length>8)l.lastChild.remove()});
+// ---------- ARIA Inspector (overlay text is decorative learning aid; off by default so screen readers aren't spammed)
+$('#inspT').onchange=e=>{$('#m1').classList.toggle('insp',e.target.checked);$$('#m1 [role],#m1 [aria-expanded],#m1 [aria-sort]').forEach(x=>{if(e.target.checked){const a=[...x.attributes].filter(q=>/^(role|aria-(expanded|selected|sort|invalid|haspopup|modal|required))$/.test(q.name)).map(q=>q.name.replace('aria-','')+'='+q.value);x.dataset.i=a.join(' ')+' | '+name(x)}else delete x.dataset.i})};
+
+// ---------- Contrast maths (WCAG 2.x definitions)
+const hexOK=h=>/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.test(h);
+const h2r=h=>{h=h.replace('#','');if(h.length==3)h=[...h].map(c=>c+c).join('');return[0,2,4].map(i=>parseInt(h.substr(i,2),16))};
+const lum=([r,g,b])=>{const f=v=>{v/=255;return v<=.03928?v/12.92:((v+.055)/1.055)**2.4};return .2126*f(r)+.7152*f(g)+.0722*f(b)};
+const cr=(a,b)=>{const x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+const toHex=c=>'#'+c.map(v=>v.toString(16).padStart(2,'0')).join('');
+function r2h([r,g,b]){r/=255;g/=255;b/=255;const M=Math.max(r,g,b),m=Math.min(r,g,b);let h=0,s=0;const l=(M+m)/2;if(M!=m){const d=M-m;s=l>.5?d/(2-M-m):d/(M+m);h=M==r?(g-b)/d+(g<b?6:0):M==g?(b-r)/d+2:(r-g)/d+4;h*=60}return[h,s,l]}
+function h2rgb([h,s,l]){const a=s*Math.min(l,1-l),f=n=>{const k=(n+h/30)%12;return Math.round(255*(l-a*Math.max(-1,Math.min(k-3,9-k,1))))};return[f(0),f(8),f(4)]}
+function suggest(fg,bg,t){if(cr(fg,bg)>=t)return fg;const hs=r2h(fg);for(const d of(lum(bg)>.18?[-1,1]:[1,-1]))for(let l=hs[2];l>=0&&l<=1;l+=d*.005){const c=h2rgb([hs[0],hs[1],l]);if(cr(c,bg)>=t)return c}return null}
+function checker(){const a=$('#fgh').value,b=$('#bgh').value;if(!hexOK(a)||!hexOK(b)){$('#hexerr').textContent='Error: use hex like #767676.';return}$('#hexerr').textContent='';
+const r=cr(h2r(a),h2r(b));$('#ratio').textContent=r.toFixed(2)+':1';
+$('#cres').innerHTML=[['Normal text AA',4.5],['Large text AA',3],['UI components & graphics AA (SC 1.4.11)',3],['Normal text AAA',7],['Large text AAA',4.5]].map(([n,t])=>`<tr><th scope="row">${n}</th><td>${t}:1</td><td class="${r>=t?'pass':'fail'}">${r>=t?'✓ Pass':'✗ Fail'}</td></tr>`).join('');
+$('#prev').style.cssText=`padding:1rem;color:${a};background:${b}`}
+[['fgc','fgh'],['bgc','bgh']].forEach(([c,h])=>{$('#'+c).oninput=()=>{$('#'+h).value=$('#'+c).value;checker()};$('#'+h).oninput=()=>{if(hexOK($('#'+h).value)&&$('#'+h).value.replace('#','').length==6)$('#'+c).value='#'+$('#'+h).value.replace('#','');checker()}});
+$('#sug').onclick=()=>{const t=+$('#tgt').value,c=suggest(h2r($('#fgh').value),h2r($('#bgh').value),t);
+if(c){$('#fgh').value=$('#fgc').value=toHex(c);checker();$('#sugout').textContent='Text colour changed to '+toHex(c)+' (ratio '+cr(c,h2r($('#bgh').value)).toFixed(2)+':1).'}else $('#sugout').textContent='No text colour reaches '+t+':1 on this background; change the background.'};
+checker();
+
+// ---------- Sample UI (shared by Before/After so both stay in sync). f=fixed?, p=id prefix
+const IMG="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='60'%3E%3Crect width='80' height='60' fill='%23c9b79c'/%3E%3C/svg%3E";
+const SVG='<svg width="16" height="16"'+'>'.replace('>','')+'><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+const sample=(f,p)=>`<div class="s ${f?'ok':'bad'}" ${f?'lang="en"':''}>
+${f?'<a class="sl" href="#">Skip to content</a>':''}<nav ${f?'aria-label="Main"':''}><a href="#" ${f?'':'tabindex="4"'}>Shop</a><a href="#">Journal</a>
+${f?'<button class="ib" aria-label="Search">'+SVG.replace('<svg','<svg aria-hidden="true"')+'</button>':'<button class="ib" tabindex="2">'+SVG+'</button>'}</nav>
+<h3>Linen Co.</h3><div class="hero">${f?'<h4>Summer linen sale</h4>':'<h5>Summer linen sale</h5>'}<p class="mut" style="margin:0">Soft, breathable shirts for hot days.</p></div>
+<img src="${IMG}" ${f?'alt="Folded beige linen shirt"':''}> <img src="${IMG}" width="20" height="15" ${f?'alt="" ':''}>
+<div class="card2"><p>Linen shirt · $48</p>${f?'<button class="btn" data-act="cart">Add to cart</button>':'<div class="btn" data-act="cart">Add to cart</div>'}
+<div class="st" ${f?'role="status"':''}></div><p><a href="#">${f?'Read the linen care guide':'Click here'}</a></p></div>
+<div class="car mut">${f?'<button class="btn" data-act="play" aria-pressed="false">Play offers</button> ':''}<span class="slide">Offer: free shipping</span></div>
+<form onsubmit="return false">${f?`<p><label>Email <input class="em" aria-describedby="${p}er"></label></p><p class="er" id="${p}er"></p><p><label>Gift note <input class="trap"></label></p>`:'<p><input class="em" placeholder="Email"></p><p><input class="trap" value="Tab is trapped here (Esc leaves)"></p>'}
+<button class="btn" data-act="submit" ${f?'':'tabindex="5"'} type="button">Subscribe</button></form>
+<div class="wrap"><table>${f?'<caption>Sizes</caption><thead><tr><th scope="col">Size</th><th scope="col">Stock</th></tr></thead><tbody>':'<tbody><tr><td>Size</td><td>Stock</td></tr>'}<tr><td>M</td><td>12</td></tr><tr><td>L</td><td>4</td></tr></tbody></table></div></div>`;
+const offers=['Offer: free shipping','Offer: 10% off shirts','Offer: new arrivals'];let oi=0,play=false;
+setInterval(()=>{oi++;$$('.s.bad .slide').forEach(e=>e.textContent=offers[oi%3]);if(play)$$('.s.ok .slide').forEach(e=>e.textContent=offers[oi%3])},3000);
+let nc=0;document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const s=a.closest('.s'),ok=s.classList.contains('ok'),k=a.dataset.act;
+if(k=='cart')s.querySelector('.st').textContent='Added to cart ('+(++nc)+')';
+if(k=='play'){play=!play;a.setAttribute('aria-pressed',play);a.textContent=play?'Pause offers':'Play offers'}
+if(k=='submit'){const i=s.querySelector('.em'),bad=!i.value.trim();if(ok){s.querySelector('.er').textContent=bad?'Error: enter your email address.':'';i.setAttribute('aria-invalid',bad);if(bad)i.focus()}else i.classList.toggle('err',bad)}});
+// Intentional keyboard trap in the Before UI (SC 2.1.2). Esc is the escape hatch for students.
+document.addEventListener('keydown',e=>{const t=e.target;if(t.matches&&t.matches('.s.bad .trap')){if(e.key=='Tab')e.preventDefault();if(e.key=='Escape')t.closest('.s').querySelector('[data-act=submit]').focus()}});
+$('#before').innerHTML=sample(0,'b');$('#after').innerHTML=sample(1,'a');
+
+// ---------- Issue data: desc ~ SC ~ name ~ level ~ users ~ detect ~ fix ~ before ~ after
+const I=`Grey body text on white~1.4.3~Contrast (Minimum)~AA~Low vision, colour-blind, bright light~Contrast checker / Module 2 scanner~Raise to at least 4.5:1~color:#aaa~color:#595959
+Faint input borders~1.4.11~Non-text Contrast~AA~Low vision~Measure border vs background~Use at least 3:1 borders~border:1px solid #ddd~border:2px solid #767676
+Product image has no alt~1.1.1~Non-text Content~A~Blind users~axe / inspect img~Describe the content~<img src="shirt.jpg">~<img src="shirt.jpg" alt="Folded beige linen shirt">
+Decorative image not hidden~1.1.1~Non-text Content~A~Screen reader users hear file names~Inspect img with no alt~Use empty alt~<img src="line.svg">~<img src="line.svg" alt="">
+Clickable div, no keyboard support~2.1.1~Keyboard~A~Keyboard and switch users~Tab to it; press Enter~Use a real button~<div onclick="add()">Add</div>~<button type="button">Add</button>
+Placeholder-only field~3.3.2~Labels or Instructions~A~Screen reader, cognitive users~Look for missing label~Add a visible label~<input placeholder="Email">~<label>Email <input></label>
+Error shown by colour only~1.4.1~Use of Color~A~Colour-blind users~Grayscale filter~Add text (and icon)~input.err{border-color:red}~<p class="er">Error: enter your email.</p>
+No visible focus~2.4.7~Focus Visible~AA~Keyboard users~Tab through page~Never remove outline without replacement~*:focus{outline:none}~:focus-visible{outline:3px solid #0b4f8a}
+Positive tabindex values~2.4.3~Focus Order~A~Keyboard, screen reader users~Search source for tabindex>0~Use DOM order, tabindex 0 or -1~<button tabindex="5">~<button>
+"Click here" link~2.4.4~Link Purpose (In Context)~A~Screen reader link lists~List links out of context~Describe the target~<a>Click here</a>~<a>Read the linen care guide</a>
+Skipped heading level~1.3.1~Info and Relationships~A~Screen reader navigation~Headings outline~Do not skip levels~<h3> then <h5>~<h3> then <h4>
+Keyboard trap~2.1.2~No Keyboard Trap~A~Keyboard users~Tab into the field, try to leave~Never intercept Tab~if(e.key=="Tab")e.preventDefault()~(remove handler)
+Auto-rotating offers, no pause~2.2.2~Pause, Stop, Hide~A~Cognitive, low vision, screen reader~Watch for motion over 5s~Add pause or avoid auto-update~setInterval(next,3000)~<button aria-pressed="false">Play offers</button>
+Icon-only button, no name~4.1.2~Name, Role, Value~A~Screen reader, voice control~Inspect accessible name~Add aria-label~<button><svg/></button>~<button aria-label="Search"><svg aria-hidden="true"/></button>
+Table without headers~1.3.1~Info and Relationships~A~Screen reader users~Inspect table~caption, th scope~<td>Size</td>~<th scope="col">Size</th>
+Fixed pixel sizes~1.4.4~Resize Text~AA~Low vision~Zoom to 200% / Module 2~Use rem and max-width~.hero{width:600px;height:90px;font-size:12px}~.hero{padding:1rem}
+Status not announced~4.1.3~Status Messages~AA~Screen reader users~Trigger action with a reader running~Add role=status~<div class="st">~<div class="st" role="status">
+No page language~3.1.1~Language of Page~A~Screen reader users~Inspect html element~Add lang~<html>~<html lang="en">`.split('\n').map(l=>l.split('~'));
+const st={};
+$('#iss').innerHTML=I.map((x,i)=>`<li class="card"><p style="margin:0"><b>${esc(x[0])}</b> · SC ${x[1]} ${x[2]} (Level ${x[3]})</p>
+<p><label><input type="checkbox" data-k="f${i}"> Found</label> <label><input type="checkbox" data-k="x${i}"> Fixed</label></p>
+<details><summary>Details and code</summary><ul><li>Affects: ${esc(x[4])}</li><li>Detect: ${esc(x[5])}</li><li>Fix: ${esc(x[6])}</li></ul><p>Before</p><pre>${esc(x[7])}</pre><p>After</p><pre>${esc(x[8]||'')}</pre></details></li>`).join('');
+$('#iss').onchange=e=>{st[e.target.dataset.k]=e.target.checked;prog()};
+function prog(){const c=p=>Object.keys(st).filter(k=>k[0]==p&&st[k]).length;$('#prog').textContent=`Found ${c('f')} of ${I.length} · Fixed ${c('x')} of ${I.length}`}prog();
+$$('[name=vw]').forEach(r=>r.onchange=()=>{const v=$('[name=vw]:checked').value;$('#bwrap').hidden=v=='a';$('#awrap').hidden=v=='b'});
+
+// ---------- Scanner
+function bgOf(e){while(e){const c=getComputedStyle(e).backgroundColor,m=c.match(/[\d.]+/g);if(m&&(m.length<4||+m[3]>0))return m.slice(0,3).map(Number);e=e.parentElement}return[255,255,255]}
+$('#scan').onclick=()=>{const rows=[];[['Before','#before'],['After','#after']].forEach(([n,sel])=>$$(sel+' *').forEach(e=>{
+if(![...e.childNodes].some(c=>c.nodeType==3&&c.textContent.trim()))return;const cs=getComputedStyle(e),fg=cs.color.match(/[\d.]+/g).slice(0,3).map(Number),bg=bgOf(e);
+const px=parseFloat(cs.fontSize),big=px>=24||(px>=18.66&&+cs.fontWeight>=700),need=big?3:4.5,r=cr(fg,bg);
+if(r<need){const s=suggest(fg,bg,need);rows.push(`<tr><td>${n}</td><td>&lt;${e.tagName.toLowerCase()}&gt; ${esc(e.textContent.trim().slice(0,20))}</td><td>${toHex(fg)} on ${toHex(bg)}</td><td class="fail">✗ ${r.toFixed(2)}</td><td>${need}:1</td><td>${s?'Use '+toHex(s):'Change background'}</td></tr>`)}}));
+$('#scanT').innerHTML=rows.join('')||'<tr><td colspan="6">No failures found.</td></tr>';$('#scanS').textContent=rows.length+' failing element(s) found. Note: scanner ignores images, gradients and opacity.'};
+
+// ---------- Magnification tests
+function stage(){const i=$('#stIn');i.innerHTML=sample(+$('#sv').value,'st');i.style.zoom=$('#zm').value/100;$('#zmo').textContent=$('#zm').value+'%';
+i.style.filter=$('#cvd').value=='none'?'':`url(#${$('#cvd').value})`;const S=$('#stage');S.style.width=$('#rf').checked?'320px':'';S.classList.toggle('sp',$('#tsp').checked);
+const m=[];if($('#rf').checked)m.push(S.scrollWidth>S.clientWidth+1?'<span class="fail">✗ Reflow: horizontal scrolling needed (SC 1.4.10)</span>':'<span class="pass">✓ Reflow: no horizontal scrolling</span>');
+if($('#tsp').checked){const c=$$('#stIn *').filter(e=>getComputedStyle(e).overflow=='hidden'&&e.scrollHeight>e.clientHeight+1);m.push(c.length?'<span class="fail">✗ Text spacing: '+c.length+' element(s) clipped (SC 1.4.12)</span>':'<span class="pass">✓ Text spacing: nothing clipped</span>')}
+$('#mres').innerHTML='<b>Result:</b> '+(m.join(' · ')||'zoom '+$('#zm').value+'% applied; check for lost content (SC 1.4.4).')}
+['sv','cvd','zm','rf','tsp'].forEach(i=>$('#'+i).oninput=stage);$$('#rf,#tsp').forEach(x=>x.onchange=stage);stage();
+
+// ---------- Checklist and report
+const C=`P~1.1.1~Non-text content has text alternatives
+P~1.2.2~Prerecorded video has captions
+P~1.3.1~Structure is programmatic (headings, lists, tables, labels)
+P~1.3.4~Content works in portrait and landscape
+P~1.4.1~Colour is not the only visual cue
+P~1.4.3~Text contrast 4.5:1 (3:1 large)
+P~1.4.4~Text resizes to 200% without loss
+P~1.4.10~Reflows at 320px without two-way scrolling
+P~1.4.11~UI and graphics contrast 3:1
+P~1.4.12~Text spacing overrides do not clip content
+O~2.1.1~All functionality works by keyboard
+O~2.1.2~No keyboard trap
+O~2.2.2~Moving or updating content can be paused
+O~2.4.1~Skip link or landmarks bypass repeated blocks
+O~2.4.2~Pages have descriptive titles
+O~2.4.3~Focus order is logical
+O~2.4.4~Link purpose is clear in context
+O~2.4.6~Headings and labels are descriptive
+O~2.4.7~Keyboard focus is visible
+O~2.5.3~Visible label is part of accessible name
+U~3.1.1~Page language is set
+U~3.2.1~Focus does not trigger unexpected change
+U~3.3.1~Errors are identified in text
+U~3.3.2~Fields have labels or instructions
+R~4.1.2~Name, role and value are exposed
+R~4.1.3~Status messages are announced`.split('\n').map(l=>l.split('~'));
+const PN={P:'Perceivable',O:'Operable',U:'Understandable',R:'Robust'};
+$('#chk').innerHTML=Object.keys(PN).map(k=>`<h3>${PN[k]}</h3>`+C.map((c,i)=>c[0]==k?`<fieldset class="card"><legend>SC ${c[1]}: ${c[2]}</legend><label><input type="radio" name="c${i}" value="Pass"> Pass</label> <label><input type="radio" name="c${i}" value="Fail"> Fail</label> <label><input type="radio" name="c${i}" value="N/A"> N/A</label> <label>Notes <input type="text" name="n${i}" style="width:14rem"></label></fieldset>`:'').join('')).join('');
+let txt='';
+$('#gen').onclick=()=>{const d={},F=[];Object.keys(PN).forEach(k=>d[k]={Pass:0,Fail:0,'N/A':0,open:0});
+C.forEach((c,i)=>{const v=document.querySelector(`[name=c${i}]:checked`);if(v){d[c[0]][v.value]++;if(v.value=='Fail')F.push(`SC ${c[1]} ${c[2]}: ${$(`[name=n${i}]`).value||'(no notes)'}`)}else d[c[0]].open++});
+const L=['A11y Lab audit report (WCAG 2.1 AA)'];Object.keys(PN).forEach(k=>{const x=d[k],t=x.Pass+x.Fail;L.push(`${PN[k]}: ${x.Pass} pass, ${x.Fail} fail, ${x['N/A']} N/A, ${x.open} untested; pass rate ${t?Math.round(100*x.Pass/t)+'%':'n/a'}`)});
+L.push('','Failed items:',...(F.length?F:['None recorded']),'','Automated tools find only part of WCAG issues; this report relies on your manual tests.');
+txt=L.join('\n');$('#report').innerHTML='<h3>Report</h3><pre>'+esc(txt)+'</pre>';$('#report').focus()};
+$('#cp').onclick=()=>{if(!txt)$('#gen').click();navigator.clipboard?.writeText(txt).then(()=>{$('#report').insertAdjacentHTML('beforeend','<p role="status">Report copied.</p>')},()=>{$('#report').insertAdjacentHTML('beforeend','<p role="status">Copy failed; select the text and copy manually.</p>')})};
+$('#pr').onclick=()=>{if(!txt)$('#gen').click();print()};
+</script></body></html>
